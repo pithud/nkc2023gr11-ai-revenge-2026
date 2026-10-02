@@ -1,0 +1,2417 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>面接対策アプリ | nkc2023gr11 (2026 Pure Web Edition)</title>
+
+  <!-- 当時オリジナルCSS -->
+  <link rel="stylesheet" href="css/sanitize.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style_ryosuke.css" />
+  <link rel="stylesheet" href="css/style_iriyama.css" />
+
+  <link rel="icon" type="image/png" href="images/kitairasutohenshu.png" />
+
+  <!-- 最新技術 CDN: Chart.js (統計グラフ) & PDF.js (PDF文字認識) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+
+  <style>
+    /* 当時UIの補正・モダンブラウザ対応 */
+    body {
+      background-image: url('images/background.png');
+      background-repeat: repeat;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ルーティング表示コンテナ */
+    #app-view {
+      min-height: calc(100vh - 220px);
+      padding-bottom: 40px;
+    }
+
+    /* アクションボタンやリンクのホバー演出 */
+    .imagebutton {
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+      display: inline-block;
+      transition: transform 0.15s ease, filter 0.15s ease;
+      position: relative;
+      max-width: 600px;
+      width: 90%;
+    }
+    .imagebutton:hover {
+      transform: scale(1.02);
+      filter: brightness(1.05);
+    }
+    .imagebutton img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      display: block;
+    }
+
+    /* 便利なページリンク集ボタン */
+    .link-tile-btn {
+      width: 80%;
+      max-width: 220px;
+      background: #ffffff;
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin: 0 auto;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .link-tile-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    .link-tile-btn img {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+    }
+    .link-tile-btn label {
+      font-size: 15px;
+      font-weight: bold;
+      color: #111;
+      cursor: pointer;
+    }
+
+    /* 録音中パルスアニメーション */
+    .recording-active {
+      background-color: #ff4757 !important;
+      color: #fff !important;
+      animation: mic-pulse 1.2s infinite;
+    }
+    @keyframes mic-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+      70% { box-shadow: 0 0 0 12px rgba(255, 71, 87, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+    }
+
+    /* データフレームテーブルのスタイル */
+    table.dataframe {
+      border-collapse: collapse;
+      margin: 15px auto;
+      background: #ffffff;
+      border: 1px solid #999;
+      font-size: 14px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+      max-width: 1000px;
+    }
+    table.dataframe th, table.dataframe td {
+      border: 1px solid #ccc;
+      padding: 6px 12px;
+      text-align: center;
+    }
+    table.dataframe th {
+      background: #f0f4f8;
+      font-weight: bold;
+      color: #333;
+    }
+    table.dataframe tr:nth-child(even) td {
+      background: #fbfbfb;
+    }
+    table.dataframe tr:hover td {
+      background: #e6f7ff;
+    }
+
+    /* 矢印ナビボタンのスタイル */
+    .hensyubutton {
+      border: none;
+      background: none;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .hensyubutton:hover {
+      transform: scale(1.1);
+    }
+
+    /* チャートラッパー */
+    .chart-box {
+      background: #ffffff;
+      border: 2px solid #444;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px auto;
+      max-width: 850px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* 汎用戻るボタン */
+    .btn-back-home {
+      display: inline-block;
+      margin: 15px;
+      padding: 8px 24px;
+      background: #333;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-back-home:hover {
+      background: #555;
+    }
+
+    /* 共通通知トースト */
+    #toast-msg {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      background: #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      z-index: 100000;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== 共通ヘッダー (base.html再現) ==================== -->
+  <header>
+    <div class="header">
+      <div class="headerlogo">
+        <div class="headerlogoimgdiv">
+          <a href="#/" style="text-decoration:none;">
+            <img class="headerlogoimg" src="images/rogo.png" alt="面接対策アプリ ロゴ" />
+          </a>
+        </div>
+      </div>
+
+      <div class="headerbutton">
+        <div class="welcomediv" id="header-welcome-box">
+          <!-- ログイン中のユーザー表示が動的に入る -->
+        </div>
+
+        <div class="tooltip3">
+          <div class="profilebuttondiv">
+            <a href="#/signup" style="text-decoration:none;">
+              <img class="headerbuttonimg" src="images/signupicon.jpg" alt="新規登録" />
+            </a>
+            <div class="description3">新規登録</div>
+          </div>
+        </div>
+
+        <div class="tooltip3">
+          <div class="profilebuttondiv">
+            <a href="#/login" style="text-decoration:none;">
+              <img class="headerbuttonimg" src="images/icon_log-in.jpg" alt="ログイン" />
+            </a>
+            <div class="description3">ログイン</div>
+          </div>
+        </div>
+
+        <div class="tooltip3">
+          <div class="profilebuttondiv">
+            <a href="#/profile" style="text-decoration:none;">
+              <img class="headerbuttonimg" src="images/upper_body.png" alt="プロフィール" />
+            </a>
+            <div class="description3">プロフィール</div>
+          </div>
+        </div>
+
+        <div class="tooltip3">
+          <div class="profilebuttondiv">
+            <a href="#/mail" style="text-decoration:none;">
+              <img class="headerbuttonimg" src="images/mail.png" alt="メール" />
+            </a>
+            <div class="description3">メール</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== メイン動的描画エリア ==================== -->
+  <main id="app-view">
+    <!-- 各ページのHTMLがJavaScriptルーターによってここに展開される -->
+  </main>
+
+  <!-- ==================== ポップアップモーダル (その他一覧) ==================== -->
+  <input type="checkbox" id="pop-up" />
+  <div class="overlay">
+    <div class="window">
+      <label class="close" for="pop-up" style="font-size:24px; font-weight:bold; color:#333;">&times;</label>
+      <div style="text-align: center; margin-bottom: 10px; font-weight:bold; font-size:20px; color:#222;">
+        その他一覧メニュー
+      </div>
+      <button class="popbutton fuchidori" onclick="closePopupAndNav('#/question_List')">
+        面接質問一覧
+      </button>
+      <button class="popbutton fuchidori" onclick="closePopupAndNav('#/hensyu')">
+        面接質問一覧(編集)
+      </button>
+      <button class="popbutton連携 fuchidori popbutton" onclick="closePopupAndNav('#/feedback_yet')">
+        未フィードバック一覧
+      </button>
+      <button class="popbutton fuchidori" onclick="closePopupAndNav('#/feedback_List')">
+        フィードバックを見る
+      </button>
+    </div>
+  </div>
+
+  <div id="toast-msg"></div>
+
+  <!-- ==================== アプリケーションコア JavaScript ==================== -->
+  <script>
+    /**
+     * 1. CT4 出席番号 1〜59 の名簿・欠席データ (退学・欠番あり)
+     * - 生徒名は完全撤廃し、学籍番号（CTX1901〜CTX1959）のみで運用
+     * - CT: 情報総合学科 / X: 4年制昼間部 / 19: 2019年入学 / XX: 出席番号
+     * - 退学欠番（5, 13, 29, 38, 49番）
+     * - 留年境界定数: 33.4日 (2022年当時の views.py ロジック完全準拠)
+     */
+    /**
+     * 1. CT4 出席番号 1〜59 の名簿・欠席データ (元データ: interview/static/.secretcsv/.all.csv 完全準拠)
+     * - 学籍番号: 19CT0XX (XX: 出席番号2桁ゼロ埋め)
+               * - 出席番号29: 11月のチャンピオン (11月累計31.83日)
+     * - 欠番: 7番 (元データ .all.csv に非存在)
+     * - 留年境界定数: 33.4日 (2022年当時の views.py ロジック完全準拠)
+     */
+    const LIMIT_DAYS = 33.4;
+
+    const CT4_STUDENTS = [
+      { num: 1, studentId: '19CT001', m4: 0, m5: 0, m6: 0.33, m7: 0.33, m9: 0.33, m10: 0.42, m11: 0.75 },
+      { num: 2, studentId: '19CT002', m4: 0, m5: 1, m6: 3, m7: 6.17, m9: 8.58, m10: 10.92, m11: 13.25 },
+      { num: 3, studentId: '19CT003', m4: 0, m5: 0, m6: 0.08, m7: 0.08, m9: 0.08, m10: 0.08, m11: 0.08 },
+      { num: 4, studentId: '19CT004', m4: 1, m5: 1, m6: 1, m7: 1, m9: 2.08, m10: 2.67, m11: 3.67 },
+      { num: 5, studentId: '19CT005', m4: 0, m5: 0.17, m6: 0.17, m7: 0.25, m9: 0.25, m10: 0.33, m11: 1.33 },
+      { num: 6, studentId: '19CT006', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 1, m11: 1 },
+      { num: 8, studentId: '19CT008', m4: 0.08, m5: 0.17, m6: 1.5, m7: 1.5, m9: 2.5, m10: 2.83, m11: 3.83 },
+      { num: 9, studentId: '19CT009', m4: 1, m5: 3, m6: 4.08, m7: 5.75, m9: 6.08, m10: 10.08, m11: 12.5 },
+      { num: 10, studentId: '19CT010', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0, m11: 0.5 },
+      { num: 11, studentId: '19CT011', m4: 0, m5: 1.5, m6: 5, m7: 8, m9: 9, m10: 14, m11: 15.08 },
+      { num: 12, studentId: '19CT012', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0.67, m10: 1.67, m11: 2 },
+      { num: 13, studentId: '19CT013', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0.92, m11: 0.92 },
+      { num: 14, studentId: '19CT014', m4: 2, m5: 8.33, m6: 12.5, m7: 13.83, m9: 20, m10: 22.5, m11: 24.67 },
+      { num: 15, studentId: '19CT015', m4: 0.08, m5: 0.17, m6: 1.25, m7: 2.25, m9: 2.33, m10: 2.42, m11: 2.42 },
+      { num: 16, studentId: '19CT016', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0, m11: 0 },
+      { num: 17, studentId: '19CT017', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0, m11: 0 },
+      { num: 18, studentId: '19CT018', m4: 0, m5: 1, m6: 1, m7: 2, m9: 3, m10: 4, m11: 5 },
+      { num: 19, studentId: '19CT019', m4: 0, m5: 2.33, m6: 2.42, m7: 4.75, m9: 5.42, m10: 8.92, m11: 10.42 },
+      { num: 20, studentId: '19CT020', m4: 0, m5: 3, m6: 8, m7: 12, m9: 14.17, m10: 17.58, m11: 18.58 },
+      { num: 21, studentId: '19CT021', m4: 3, m5: 7.33, m6: 14.33, m7: 17.17, m9: 21.17, m10: 26.83, m11: 31.17 },
+      { num: 22, studentId: '19CT022', m4: 0, m5: 0, m6: 0.17, m7: 1.17, m9: 2.5, m10: 6.17, m11: 10.17 },
+      { num: 23, studentId: '19CT023', m4: 1.33, m5: 9.17, m6: 15.67, m7: 18.58, m9: 19.5, m10: 26.25, m11: 28.33 },
+      { num: 24, studentId: '19CT024', m4: 0.08, m5: 1.75, m6: 4.42, m7: 5.17, m9: 6.92, m10: 10.5, m11: 14.42 },
+      { num: 25, studentId: '19CT025', m4: 0, m5: 0, m6: 0, m7: 0.42, m9: 0.42, m10: 0.42, m11: 0.42 },
+      { num: 26, studentId: '19CT026', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0, m11: 0 },
+      { num: 27, studentId: '19CT027', m4: 1, m5: 1, m6: 1, m7: 1, m9: 1, m10: 4.67, m11: 4.67 },
+      { num: 28, studentId: '19CT028', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0, m11: 0 },
+      { num: 29, studentId: '19CT029', m4: 11, m5: 28, m6: 30.67, m7: 31.83, m9: 31.83, m10: 31.83, m11: 31.83 },
+      { num: 30, studentId: '19CT030', m4: 1.08, m5: 3.5, m6: 6.92, m7: 9.08, m9: 11.08, m10: 13.75, m11: 15 },
+      { num: 31, studentId: '19CT031', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0.08, m11: 0.08 },
+      { num: 32, studentId: '19CT032', m4: 0, m5: 0, m6: 0, m7: 0.08, m9: 0.08, m10: 0.25, m11: 0.25 },
+      { num: 33, studentId: '19CT033', m4: 1.92, m5: 6.08, m6: 9.67, m7: 12.75, m9: 14, m10: 16.75, m11: 17.75 },
+      { num: 34, studentId: '19CT034', m4: 0, m5: 0, m6: 0, m7: 0.17, m9: 0.17, m10: 1.17, m11: 2.17 },
+      { num: 35, studentId: '19CT035', m4: 1, m5: 1, m6: 1, m7: 12.17, m9: 13.17, m10: 21.17, m11: 21.17 },
+      { num: 36, studentId: '19CT036', m4: 0, m5: 1, m6: 2.08, m7: 3.75, m9: 4.75, m10: 6.5, m11: 7.5 },
+      { num: 37, studentId: '19CT037', m4: 1.08, m5: 2.42, m6: 3.75, m7: 7.17, m9: 8.5, m10: 13.5, m11: 16.25 },
+      { num: 38, studentId: '19CT038', m4: 1.17, m5: 5, m6: 8.42, m7: 11.83, m9: 16.92, m10: 24.08, m11: 25.5 },
+      { num: 39, studentId: '19CT039', m4: 0.08, m5: 1.58, m6: 6.58, m7: 22.58, m9: 22.58, m10: 22.67, m11: 24.75 },
+      { num: 40, studentId: '19CT040', m4: 0, m5: 8, m6: 13, m7: 18, m9: 20, m10: 26, m11: 29 },
+      { num: 41, studentId: '19CT041', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0, m11: 0.08 },
+      { num: 42, studentId: '19CT042', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0, m11: 1 },
+      { num: 43, studentId: '19CT043', m4: 0, m5: 0, m6: 0.33, m7: 1.33, m9: 1.33, m10: 2.33, m11: 3.42 },
+      { num: 44, studentId: '19CT044', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0, m11: 0 },
+      { num: 45, studentId: '19CT045', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0, m11: 0 },
+      { num: 46, studentId: '19CT046', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0, m11: 0 },
+      { num: 47, studentId: '19CT047', m4: 0.33, m5: 2, m6: 3.67, m7: 4.75, m9: 7.25, m10: 11.42, m11: 12.67 },
+      { num: 48, studentId: '19CT048', m4: 5, m5: 6, m6: 12.42, m7: 16.42, m9: 20.42, m10: 23.75, m11: 28.67 },
+      { num: 49, studentId: '19CT049', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0, m11: 0 },
+      { num: 50, studentId: '19CT050', m4: 6, m5: 15, m6: 20.58, m7: 26.08, m9: 29.25, m10: 31.25, m11: 31.25 },
+      { num: 51, studentId: '19CT051', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 1, m11: 1 },
+      { num: 52, studentId: '19CT052', m4: 0, m5: 0, m6: 0, m7: 0.17, m9: 0.17, m10: 0.83, m11: 1.5 },
+      { num: 53, studentId: '19CT053', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0.08, m11: 0.08 },
+      { num: 54, studentId: '19CT054', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0.17, m10: 0.25, m11: 0.58 },
+      { num: 55, studentId: '19CT055', m4: 2.42, m5: 4.42, m6: 5.42, m7: 7.42, m9: 7.42, m10: 9.08, m11: 11.08 },
+      { num: 56, studentId: '19CT056', m4: 0, m5: 0, m6: 0, m7: 0, m9: 0, m10: 0, m11: 0 },
+      { num: 57, studentId: '19CT057', m4: 0.75, m5: 3.5, m6: 3.75, m7: 5.58, m9: 7.08, m10: 9.83, m11: 12.58 },
+      { num: 58, studentId: '19CT058', m4: 0.67, m5: 0.67, m6: 1.67, m7: 3.67, m9: 3.67, m10: 3.67, m11: 4.67 },
+      { num: 59, studentId: '19CT059', m4: 6.5, m5: 15.33, m6: 20.58, m7: 22.67, m9: 24.67, m10: 27.25, m11: 27.67 },
+    ];
+
+    /**
+     * 2. LocalStorage DB 管理 (Django models.py DB & Account の完全再現)
+     */
+    const STORAGE_KEY_DB = 'nkc2023gr11_questions_db';
+    const STORAGE_KEY_ACCOUNTS = 'nkc2023gr11_accounts_db';
+    const STORAGE_KEY_SESSION = 'nkc2023gr11_current_user';
+
+    const INITIAL_ACCOUNTS = [
+      { username: 'user1', lastName: '', firstName: '', img: 'images/upper_body.png' },
+      { username: 'user2', lastName: '', firstName: '', img: 'images/upper_body.png' },
+      { username: 'user3', lastName: '', firstName: '', img: 'images/upper_body.png' },
+      { username: 'admin', lastName: '管理者', firstName: 'マスター', img: 'images/upper_body.png' }
+    ];
+
+    const INITIAL_QUESTIONS = [
+      {
+        id: 1,
+        Question: '自己PRをしてください',
+        Answer: '私の強みは粘り強い課題解決能力です。卒業研究ではDjangoとWeb Speech APIを連携させた面接練習システムを構築し、音声対話と統計ダッシュボードを完遂しました。',
+        Memo: '1分程度で簡潔に話せた。',
+        FB: '具体例があり非常に聞きやすいです。成果の数値をさらに補足すると完璧です。',
+        Contributor: 'admin',
+        WhoAnswers: 'Kitahata',
+        FBer: 'ryosuke',
+        Genre: 'classic',
+        AnswerReq: 'Kitahata',
+        FBReq: 'ryosuke'
+      },
+      {
+        id: 2,
+        Question: '志望動機を教えてください',
+        Answer: '貴社の先進的なWebアプリケーション開発と、社会課題を技術で解決する姿勢に強く共感したため志望いたしました。',
+        Memo: '企業理念と自分のビジョンを紐付けた。',
+        FB: '熱意が伝わって大変好印象です。入社後に携わりたい分野も具体化しましょう。',
+        Contributor: 'Kitahata',
+        WhoAnswers: 'iriyama',
+        FBer: 'Kitahata',
+        Genre: 'classic',
+        AnswerReq: 'iriyama',
+        FBReq: 'Kitahata'
+      },
+      {
+        id: 3,
+        Question: '学生時代に最も力を入れたことは何ですか？',
+        Answer: '4年制の情報総合学科で卒業研究のリーダーを務め、フルスタックWebアプリの開発をスケジュール通り完遂したことです。',
+        Memo: 'チームでの役割と工夫を強調。',
+        FB: 'リーダーシップとチーム開発の経験が明瞭で説得力があります。',
+        Contributor: 'iriyama',
+        WhoAnswers: 'Kitahata',
+        FBer: 'admin',
+        Genre: 'classic',
+        AnswerReq: 'Kitahata',
+        FBReq: 'admin'
+      },
+      {
+        id: 4,
+        Question: '長所と短所を教えてください',
+        Answer: '長所は新しい技術へのキャッチアップが早いことです。短所は集中しすぎて時間を忘れがちな点ですが、タイマーと進捗管理で補っています。',
+        Memo: '短所への対策まで回答した。',
+        FB: '',
+        Contributor: 'ryosuke',
+        WhoAnswers: 'iriyama',
+        FBer: '',
+        Genre: 'classic',
+        AnswerReq: '',
+        FBReq: ''
+      },
+      {
+        id: 5,
+        Question: '挫折した経験とそれをどう乗り越えたかを教えてください',
+        Answer: '外部APIとの非同期連携で原因不明のエラーに直面しましたが、公式ドキュメントとパケット解析を徹底的に行い解決しました。',
+        Memo: '技術的トラブルシューティングをアピール。',
+        FB: '論理的な解決プロセスが評価できます。',
+        Contributor: 'admin',
+        WhoAnswers: 'Kitahata',
+        FBer: 'admin',
+        Genre: 'classic',
+        AnswerReq: '',
+        FBReq: ''
+      },
+      {
+        id: 6,
+        Question: 'チームで開発する際に最も重視している価値観は何ですか？',
+        Answer: '情報の透明性と迅速な共有です。仕様の不明点や課題は抱え込まず、即座にSlackや対面で相談することを徹底しました。',
+        Memo: '心理的安全性と報連相の重要性。',
+        FB: '協調性とコミュニケーション能力が伝わります。',
+        Contributor: 'Kitahata',
+        WhoAnswers: 'ryosuke',
+        FBer: 'Kitahata',
+        Genre: 'classic',
+        AnswerReq: '',
+        FBReq: ''
+      },
+      {
+        id: 7,
+        Question: '御社で活躍されているエンジニアに共通する行動特性は何でしょうか？',
+        Answer: '',
+        Memo: '会社のカルチャーや求める人物像を深く知るための逆質問。',
+        FB: '',
+        Contributor: 'Kitahata',
+        WhoAnswers: '',
+        FBer: '',
+        Genre: 'reverse',
+        AnswerReq: '',
+        FBReq: ''
+      },
+      {
+        id: 8,
+        Question: 'チーム開発において、コードレビューやCI/CDはどのような体制で運用されていますか？',
+        Answer: '',
+        Memo: '実際の開発現場のモダン度合いや品質管理体制を確認。',
+        FB: '',
+        Contributor: 'iriyama',
+        WhoAnswers: '',
+        FBer: '',
+        Genre: 'reverse',
+        AnswerReq: '',
+        FBReq: ''
+      },
+      {
+        id: 9,
+        Question: '入社までに自主的に学んでおくべき推奨の技術スタックはありますでしょうか？',
+        Answer: '',
+        Memo: '入社後の即戦力化に向けた意欲をアピール。',
+        FB: '',
+        Contributor: 'ryosuke',
+        WhoAnswers: '',
+        FBer: '',
+        Genre: 'reverse',
+        AnswerReq: '',
+        FBReq: ''
+      }
+    ];
+
+    function getDB() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY_DB);
+        if (!data) {
+          localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(INITIAL_QUESTIONS));
+          return INITIAL_QUESTIONS;
+        }
+        return JSON.parse(data);
+      } catch (e) {
+        return INITIAL_QUESTIONS;
+      }
+    }
+
+    function saveDB(list) {
+      localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(list));
+    }
+
+    function getAccounts() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY_ACCOUNTS);
+        if (!data) {
+          localStorage.setItem(STORAGE_KEY_ACCOUNTS, JSON.stringify(INITIAL_ACCOUNTS));
+          return INITIAL_ACCOUNTS;
+        }
+        return JSON.parse(data);
+      } catch (e) {
+        return INITIAL_ACCOUNTS;
+      }
+    }
+
+    function saveAccounts(accounts) {
+      localStorage.setItem(STORAGE_KEY_ACCOUNTS, JSON.stringify(accounts));
+    }
+
+    function getCurrentUser() {
+      return localStorage.getItem(STORAGE_KEY_SESSION) || 'Kitahata';
+    }
+
+    function setCurrentUser(username) {
+      localStorage.setItem(STORAGE_KEY_SESSION, username);
+      updateHeaderUser();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast-msg');
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 2500);
+    }
+
+    /**
+     * 3. ヘッダーのユーザー情報更新
+     */
+    function updateHeaderUser() {
+      const u = getCurrentUser();
+      const accounts = getAccounts();
+      const acc = accounts.find(a => a.username === u) || { username: u, lastName: '' };
+      const box = document.getElementById('header-welcome-box');
+      box.innerHTML = `
+        <h2><font color="red">${escapeHtml(acc.username)}</font>さんようこそ！！</h2>
+        <p style="font-size: 15px; margin: 0;">
+          ログアウトは <a href="#/login" onclick="logoutUser(event)">こちら</a>
+        </p>
+      `;
+    }
+
+    function logoutUser(e) {
+      if (e) e.preventDefault();
+      localStorage.removeItem(STORAGE_KEY_SESSION);
+      updateHeaderUser();
+      location.hash = '#/login';
+      showToast('ログアウトしました');
+    }
+
+    function closePopupAndNav(hash) {
+      document.getElementById('pop-up').checked = false;
+      location.hash = hash;
+    }
+
+    /**
+     * 4. ページルーター (当時のURL構成・画面遷移を完全再現)
+     */
+    function router() {
+      const hash = location.hash || '#/';
+      const app = document.getElementById('app-view');
+
+      // 質問面接画面: #/mensetu or #/mensetu/:id
+      if (hash.startsWith('#/mensetu')) {
+        const parts = hash.split('/');
+        const id = parts[2] ? parseInt(parts[2], 10) : null;
+        renderMensetuView(id);
+      }
+      // 他の人の回答: #/feedback
+      else if (hash === '#/feedback') {
+        renderFeedbackListView();
+      }
+      // フィードバック閲覧/作成: #/feedback_let/:id
+      else if (hash.startsWith('#/feedback_let/')) {
+        const id = parseInt(hash.replace('#/feedback_let/', ''), 10);
+        renderFeedbackLetView(id);
+      }
+      // 未フィードバック一覧: #/feedback_yet
+      else if (hash === '#/feedback_yet') {
+        renderFeedbackYetView();
+      }
+      // フィードバック一覧: #/feedback_List
+      else if (hash === '#/feedback_List') {
+        renderFeedbackListView();
+      }
+      // 質問投稿: #/question
+      else if (hash === '#/question') {
+        renderQuestionCreateView();
+      }
+      // 質問一覧: #/question_List
+      else if (hash === '#/question_List') {
+        renderQuestionListView();
+      }
+      // 質問一覧(編集): #/hensyu
+      else if (hash === '#/hensyu') {
+        renderHensyuView();
+      }
+      // 質問更新: #/update/:id
+      else if (hash.startsWith('#/update/')) {
+        const id = parseInt(hash.replace('#/update/', ''), 10);
+        renderUpdateView(id);
+      }
+      // 出席DB: #/attend
+      else if (hash === '#/attend') {
+        renderAttendView();
+      }
+      // 一気に入力: #/allinput
+      else if (hash === '#/allinput') {
+        renderAllInputView();
+      }
+      // CSV投稿: #/csvDLUP
+      else if (hash === '#/csvDLUP') {
+        renderCsvDLUPView();
+      }
+      // PDF文字認識: #/pdf_read
+      else if (hash === '#/pdf_read') {
+        renderPdfReadView();
+      }
+      // プロフィール: #/profile
+      else if (hash === '#/profile') {
+        renderProfileView();
+      }
+      // メール: #/mail
+      else if (hash === '#/mail') {
+        renderMailView();
+      }
+      // ログイン: #/login
+      else if (hash === '#/login') {
+        renderLoginView();
+      }
+      // 新規登録: #/signup
+      else if (hash === '#/signup') {
+        renderSignupView();
+      }
+      // デフォルト: ホーム (question_Main.html)
+      else {
+        renderHomeView();
+      }
+
+      window.scrollTo(0, 0);
+    }
+
+    // ==========================================
+    // 画面 1: ホーム画面 (question_Main.html 再現)
+    // ==========================================
+    function renderHomeView() {
+      const app = document.getElementById('app-view');
+      const db = getDB();
+      const firstId = db.length > 0 ? db[0].id : 1;
+
+      // 質問統計の計算
+      const totalQ = db.length;
+      const classicCount = db.filter(q => q.Genre === 'classic').length;
+      const reverseCount = db.filter(q => q.Genre === 'reverse').length;
+      const answeredCount = db.filter(q => q.Answer && q.Answer.trim() !== '').length;
+
+      app.innerHTML = `
+        <div class="container" style="text-align: center; margin-top: 20px;">
+          <button type="button" class="fuchidori imagebutton" onclick="location.hash='#/mensetu/${firstId}'">
+            <img src="images/mensetu.png" alt="面接開始" />
+            <p>面接開始</p>
+          </button>
+        </div>
+
+        <div class="container" style="text-align: center;">
+          <button type="button" class="fuchidori imagebutton" onclick="location.hash='#/feedback'">
+            <img src="images/kaitou.png" alt="他の人の回答" />
+            <p>他の人の回答</p>
+          </button>
+        </div>
+
+        <div class="container" style="text-align: center;">
+          <button type="button" class="fuchidori imagebutton" onclick="location.hash='#/question'">
+            <img src="images/situmon.png" alt="質問" />
+            <p>質問</p>
+          </button>
+        </div>
+
+        <!-- サイト統計 (当時のMatplotlib描画をChart.jsで完全再現) -->
+        <div class="container" style="text-align: center; margin-top: 25px;">
+          <h2 style="font-size: 22px; font-weight: bold; margin-bottom: 10px;">サイト統計</h2>
+          <div class="chart-box" style="max-width: 500px; height: 300px; cursor: pointer;" onclick="location.hash='#/question_List'">
+            <canvas id="homeStatsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 便利なページリンク集 -->
+        <div class="container" style="text-align: center; margin-top: 25px;">
+          <h2 style="font-size: 22px; font-weight: bold; margin-bottom: 15px;">便利なページリンク集</h2>
+          <div style="display: flex; justify-content: center; gap: 20px; max-width: 600px; margin: 0 auto 15px auto; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 140px;">
+              <button type="button" class="link-tile-btn" onclick="location.hash='#/csvDLUP'">
+                <img src="images/kitairasutohenshu.png" alt="" />
+                <label>csvで投稿</label>
+              </button>
+            </div>
+            <div style="flex: 1; min-width: 140px;">
+              <button type="button" class="link-tile-btn" onclick="location.hash='#/pdf_read'">
+                <img src="images/kitairasutohenshu.png" alt="" />
+                <label>PDF文字認識</label>
+              </button>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: center; gap: 20px; max-width: 600px; margin: 0 auto; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 140px;">
+              <button type="button" class="link-tile-btn" onclick="location.hash='#/allinput'">
+                <img src="images/kitairasutohenshu.png" alt="" />
+                <label>一気に入力</label>
+              </button>
+            </div>
+            <div style="flex: 1; min-width: 140px;">
+              <button type="button" class="link-tile-btn" onclick="location.hash='#/attend'">
+                <img src="images/kitairasutohenshu.png" alt="" />
+                <label>CT4出席DB</label>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- その他一覧 (モーダルを開くボタン) -->
+        <div style="text-align: center; margin: 40px 0 20px 0;">
+          <label class="open fixed" for="pop-up" style="font-size: 18px; padding: 12px 30px;">
+            その他一覧
+          </label>
+        </div>
+      `;
+
+      // ホーム画面の統計チャート初期化
+      setTimeout(() => {
+        const ctx = document.getElementById('homeStatsChart');
+        if (ctx) {
+          new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+              labels: ['定番質問', '逆質問', '回答済み'],
+              datasets: [{
+                data: [classicCount, reverseCount, answeredCount],
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b']
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'bottom' },
+                title: { display: true, text: `登録質問: ${totalQ}件 / 回答済み: ${answeredCount}件` }
+              }
+            }
+          });
+        }
+      }, 50);
+    }
+
+    // ==========================================
+    // 画面 2: 面接開始・練習画面 (mensetu.html 再現)
+    // ==========================================
+    let currentSpeechRecognizer = null;
+    let isRecordingVoice = false;
+
+    function renderMensetuView(targetId) {
+      const app = document.getElementById('app-view');
+      const db = getDB();
+      const accounts = getAccounts();
+
+      let currentItem = db.find(q => q.id === targetId);
+      if (!currentItem && db.length > 0) {
+        currentItem = db[0];
+      }
+      if (!currentItem) {
+        app.innerHTML = `
+          <div style="text-align:center; padding: 50px;">
+            <h2>質問データが登録されていません。</h2>
+            <a href="#/question" class="btn-back-home">質問を登録する</a>
+          </div>
+        `;
+        return;
+      }
+
+      const currentIndex = db.findIndex(q => q.id === currentItem.id);
+      const prevId = currentIndex > 0 ? db[currentIndex - 1].id : db[db.length - 1].id;
+      const nextId = currentIndex < db.length - 1 ? db[currentIndex + 1].id : db[0].id;
+
+      app.innerHTML = `
+        <form class="mensetsu-form" style="width: 100%; max-width: 600px; margin: 0 auto; padding: 15px;" onsubmit="handleMensetuSubmit(event, ${currentItem.id})">
+          <p style="text-align: center; font-size: 16px;">
+            ジャンル<br>
+            <input type="radio" id="genre_random" name="contact" value="random" onchange="filterGenreMensetu('random')">
+            <label for="genre_random">ランダム</label>
+            <input type="radio" id="genre_classic" name="contact" value="classic" ${currentItem.Genre === 'classic' ? 'checked' : ''} onchange="filterGenreMensetu('classic')">
+            <label for="genre_classic">定番</label>
+            <input type="radio" id="genre_reverse" name="contact" value="reverse" ${currentItem.Genre === 'reverse' ? 'checked' : ''} onchange="filterGenreMensetu('reverse')">
+            <label for="genre_reverse">逆質問</label>
+          </p>
+
+          <p style="text-align: center; font-size: 18px; font-weight: bold;">
+            質問:${currentItem.id}
+            <textarea id="qestionid" name="qestionid" style="display: none;" readonly>${currentItem.id}</textarea>
+            <br>
+            ${currentItem.Contributor ? `<span style="font-size:14px; color:#555;">(投稿者:${escapeHtml(currentItem.Contributor)})</span><br>` : ''}
+            <textarea id="question" name="question" cols="30" rows="5" readonly style="width: 90%; max-width: 500px; margin-top: 8px; font-size: 16px; padding: 8px;">${escapeHtml(currentItem.Question)}</textarea>
+          </p>
+
+          <!-- 当時そのままの「テキスト読み上げを実行(課金)」ボタン！(最新Web Speech APIで完全無料・即時発声) -->
+          <div style="text-align: center; margin-bottom: 15px;">
+            <button type="button" style="padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; border: 2px solid #333; background: #fff;" onclick="synthesizeSpeech()">
+              🔊 テキスト読み上げを実行(課金)
+            </button>
+          </div>
+
+          <p style="text-align: center; font-size: 16px;">
+            あなたの回答<br>
+            <textarea id="ans" name="ans" cols="30" rows="5" style="width: 90%; max-width: 500px; font-size: 15px; padding: 8px;" placeholder="音声認識ボタンで話すか、直接入力してください">${escapeHtml(currentItem.Answer || '')}</textarea>
+          </p>
+
+          <div style="text-align: center; margin-bottom: 15px;">
+            <p style="margin-bottom: 5px;">
+              <input type="number" id="timeSec" min="3" max="60" value="5" style="width: 60px; padding: 4px; text-align: center;"> 秒
+            </p>
+            <button type="button" id="btnRecordMic" style="padding: 10px 25px; font-size: 15px; font-weight: bold; cursor: pointer; border: 2px solid #333; background: #ffffff;" onclick="toggleSpeechRecognition()">
+              🎙️ 録音開始
+            </button>
+            <div id="micStatusText" style="display: none; margin-top: 6px; font-size: 13px; color: #ff3838; font-weight: bold;">
+              🔴 音声認識中... 話してください
+            </div>
+          </div>
+
+          <p style="text-align: center; font-size: 16px;">
+            メモ<br>
+            <textarea name="memo" id="memo" cols="30" rows="4" style="width: 90%; max-width: 500px; font-size: 14px; padding: 8px;" placeholder="自己振り返りや要点をメモ">${escapeHtml(currentItem.Memo || '')}</textarea>
+          </p>
+
+          <p style="text-align: center; font-size: 16px;">
+            フィードバックリクエスト<br>
+            <select name="fbreq" id="fbreq" style="padding: 6px 12px; font-size: 14px;">
+              <option value="">idを選択</option>
+              ${accounts.map(acc => `<option value="${escapeHtml(acc.username)}" ${currentItem.FBReq === acc.username ? 'selected' : ''}>${escapeHtml(acc.username)}</option>`).join('')}
+            </select>
+          </p>
+
+          <!-- 当時の矢印ボタンナビゲーション -->
+          <p class="formbutton" style="text-align: center; margin-top: 20px; display: flex; justify-content: center; gap: 20px;">
+            <button class="hensyubutton" type="button" onclick="location.hash='#/mensetu/${prevId}'" title="前の質問">
+              <img src="images/mark_arrow_left.png" height="70" width="85" alt="前へ" />
+            </button>
+            <button id="reloadBtn" class="hensyubutton" type="button" onclick="resetMensetuForm()" title="リロード/クリア">
+              <img src="images/mark_arrow_reload.png" height="70" width="85" alt="リロード" />
+            </button>
+            <button id="nextBtn" class="hensyubutton" type="submit" title="保存して次へ">
+              <img src="images/mark_arrow_right.png" height="70" width="85" alt="次へ" />
+            </button>
+          </p>
+        </form>
+
+        <section style="text-align: center; margin-top: 20px;">
+          <p><a href="#/" class="btn-back-home">戻る</a></p>
+        </section>
+      `;
+    }
+
+    // 音声読み上げ (当時: Azure Speech -> 最新: Web Speech API TTS)
+    function synthesizeSpeech() {
+      if (!('speechSynthesis' in window)) {
+        alert('お使いのブラウザは音声合成に対応していません。');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const text = document.getElementById('question').value;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ja-JP';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+      showToast('🔊 質問を読み上げています (Web Speech API)');
+    }
+
+    // 音声認識 (当時: Azure Speech -> 最新: Web Speech API STT)
+    function toggleSpeechRecognition() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) {
+        alert('お使いのブラウザはWeb Speech Recognitionに対応していません。Google ChromeまたはEdgeを推奨します。');
+        return;
+      }
+
+      const btn = document.getElementById('btnRecordMic');
+      const statusText = document.getElementById('micStatusText');
+      const ansField = document.getElementById('ans');
+      const timeSec = parseInt(document.getElementById('timeSec').value, 10) || 5;
+
+      if (isRecordingVoice) {
+        if (currentSpeechRecognizer) currentSpeechRecognizer.stop();
+        return;
+      }
+
+      currentSpeechRecognizer = new SpeechRec();
+      currentSpeechRecognizer.lang = 'ja-JP';
+      currentSpeechRecognizer.continuous = true;
+      currentSpeechRecognizer.interimResults = true;
+
+      let finalTranscript = ansField.value ? ansField.value + ' ' : '';
+
+      currentSpeechRecognizer.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interim += event.results[i][0].transcript;
+          }
+        }
+        ansField.value = finalTranscript + interim;
+      };
+
+      currentSpeechRecognizer.onerror = (e) => {
+        console.error('Speech error', e);
+        stopRecordingUI();
+      };
+
+      currentSpeechRecognizer.onend = () => {
+        stopRecordingUI();
+      };
+
+      try {
+        currentSpeechRecognizer.start();
+        isRecordingVoice = true;
+        btn.classList.add('recording-active');
+        btn.textContent = '🛑 音声認識を停止';
+        statusText.style.display = 'block';
+
+        // タイマー秒数で自動停止
+        setTimeout(() => {
+          if (isRecordingVoice && currentSpeechRecognizer) {
+            currentSpeechRecognizer.stop();
+          }
+        }, timeSec * 1000);
+      } catch (err) {
+        console.error(err);
+      }
+
+      function stopRecordingUI() {
+        isRecordingVoice = false;
+        btn.classList.remove('recording-active');
+        btn.textContent = '🎙️ 録音開始';
+        statusText.style.display = 'none';
+        showToast('回答を音声入力しました');
+      }
+    }
+
+    function resetMensetuForm() {
+      document.getElementById('ans').value = '';
+      document.getElementById('memo').value = '';
+      document.getElementById('fbreq').value = '';
+      showToast('入力欄をクリアしました');
+    }
+
+    function filterGenreMensetu(genre) {
+      const db = getDB();
+      if (genre === 'random') {
+        const rand = db[Math.floor(Math.random() * db.length)];
+        location.hash = `#/mensetu/${rand.id}`;
+      } else {
+        const filtered = db.filter(q => q.Genre === genre);
+        if (filtered.length > 0) {
+          location.hash = `#/mensetu/${filtered[0].id}`;
+        }
+      }
+    }
+
+    function handleMensetuSubmit(e, id) {
+      e.preventDefault();
+      const ans = document.getElementById('ans').value;
+      const memo = document.getElementById('memo').value;
+      const fbreq = document.getElementById('fbreq').value;
+      const currentUser = getCurrentUser();
+
+      const db = getDB();
+      const item = db.find(q => q.id === id);
+      if (item) {
+        item.Answer = ans;
+        item.Memo = memo;
+        item.FBReq = fbreq;
+        item.WhoAnswers = currentUser;
+        saveDB(db);
+        showToast('回答とメモを保存しました');
+      }
+
+      // 次の質問へ遷移
+      const idx = db.findIndex(q => q.id === id);
+      const nextId = idx < db.length - 1 ? db[idx + 1].id : db[0].id;
+      location.hash = `#/mensetu/${nextId}`;
+    }
+
+    // ==========================================
+    // 画面 3: attend.html 再現
+    // ==========================================
+    let currentAttendChartLine = null;
+    let currentAttendChartPie = null;
+    let currentAttendChartScatter = null;
+    let currentAttendChartHist = null;
+    let currentAttendChartAllBar = null;
+
+    function renderAttendView() {
+      const app = document.getElementById('app-view');
+      const defaultAttendNum = 21;
+
+      app.innerHTML = `
+        <div style="text-align: center;">
+          <form id="attendForm" onsubmit="handleAttendSubmit(event)" style="padding: 10px; border: 1px solid #333; background: #fff; max-width: 1000px; margin: 0 auto;">
+            <div style="text-align: center;">
+              <img style="width: 100%; max-width: 400px;" src="images/attend.png" alt="" />
+            </div>
+
+            <h2 style="border: 1px solid #333; font-size: 20px; padding: 6px; margin: 10px 0;">出席番号の選択</h2>
+
+            <div style="margin: 15px 0;">
+              <select name="attendNum" id="attendNumSelect" style="padding: 6px 12px; font-size: 16px;" onchange="updateAttendCalculations()">
+                <option value="">出席番号</option>
+                ${CT4_STUDENTS.map(s => `
+                  <option value="${s.num}" ${s.num === defaultAttendNum ? 'selected' : ''}>
+                    ${s.studentId}
+                  </option>
+                `).join('')}
+              </select>
+              <input type="submit" value="決定" style="padding: 6px 18px; font-size: 16px; margin-left: 8px; cursor: pointer;" />
+            </div>
+
+            <p id="attendHensachiDisplay" style="font-size: 18px; margin: 15px 0;">
+              出席番号${defaultAttendNum}の偏差値:
+            </p>
+
+            <a id="btnDownloadGraph" href="#" download="graph.png" style="font-size: 14px; color: #0284c7; text-decoration: underline;" onclick="downloadChartImage(event)">
+              グラフダウンロード
+            </a>
+
+            <!-- グラフ 1: utils1 (折れ線 + 円グラフ) -->
+            <div style="width: 100%; text-align: center; padding: 10px;">
+              <div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
+                <div style="flex: 1 1 480px; min-width: 320px; border: 1px solid #ccc; padding: 8px; background: #fff;">
+                  <div class="chart-box" style="height: 300px;">
+                    <canvas id="attendChartLine"></canvas>
+                  </div>
+                </div>
+                <div style="flex: 1 1 380px; min-width: 300px; border: 1px solid #ccc; padding: 8px; background: #fff;">
+                  <div class="chart-box" style="height: 300px;">
+                    <canvas id="attendChartPie"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <section style="margin: 20px 0;">
+              <input class="question-button" type="button" value="戻る" onclick="location.hash='#/'" style="padding: 6px 24px; font-size: 15px;" />
+            </section>
+
+            <!-- グラフ 2: utils2 (欠席統計) -->
+            <h2 style="border: 1px solid #333; font-size: 20px; padding: 6px; margin-top: 25px;">CT4の欠席統計</h2>
+            <div style="width: 100%; text-align: center; padding: 10px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px;">
+                <div style="border: 1px solid #ccc; padding: 8px; background: #fff;">
+                  <div class="chart-box" style="height: 240px;">
+                    <canvas id="attendChartScatter"></canvas>
+                  </div>
+                </div>
+                <div style="border: 1px solid #ccc; padding: 8px; background: #fff;">
+                  <div class="chart-box" style="height: 240px;">
+                    <canvas id="attendChartHist"></canvas>
+                  </div>
+                </div>
+                <div style="border: 1px solid #ccc; padding: 8px; background: #fff; grid-column: 1 / -1;">
+                  <div class="chart-box" style="height: 260px;">
+                    <canvas id="attendChartAllBar"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dataframe" style="width: 100%; padding: 10px; overflow-x: auto;">
+              <div id="attendDescribeContainer"></div>
+            </div>
+
+            <h2 style="border: 1px solid #333; font-size: 20px; padding: 6px; margin-top: 25px;">CT4の欠席詳細</h2>
+            <div class="dataframe" style="width: 100%; padding: 10px; overflow-x: auto;">
+              <div id="attendAllCsvContainer"></div>
+            </div>
+          </form>
+        </div>
+      `;
+
+      setTimeout(() => {
+        updateAttendCalculations();
+      }, 50);
+    }
+
+    function handleAttendSubmit(e) {
+      e.preventDefault();
+      updateAttendCalculations();
+    }
+
+    function updateAttendCalculations() {
+      const select = document.getElementById('attendNumSelect');
+      if (!select) return;
+      const attendNum = parseInt(select.value, 10);
+      const student = CT4_STUDENTS.find(s => s.num === attendNum) || CT4_STUDENTS[0];
+
+      // 11月のチャンピオン
+      const champion = [...CT4_STUDENTS].sort((a, b) => b.m11 - a.m11)[0];
+
+      // 統計量
+      const n = CT4_STUDENTS.length;
+      const values11 = CT4_STUDENTS.map(s => s.m11);
+      const mean = values11.reduce((sum, v) => sum + v, 0) / n;
+      const variance = values11.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / (n - 1);
+      const std = Math.sqrt(variance) || 1;
+
+      // 偏差値計算: (attendValue - mean) / std * 10 + 50
+      const hensachi = ((student.m11 - mean) / std * 10) + 50;
+
+      // 当時の attend.html そのままの表示形式: 出席番号{{ 出席番号 }}の偏差値:{{ 偏差値 }}
+      document.getElementById('attendHensachiDisplay').innerText = `出席番号${student.studentId}の偏差値:${hensachi.toFixed(2)}`;
+
+      // 1. 折れ線グラフ (utils1)
+      const ctxLine = document.getElementById('attendChartLine');
+      if (ctxLine) {
+        if (currentAttendChartLine) currentAttendChartLine.destroy();
+        const t_list = ['4月', '5月', '6月', '7月', '9月', '10月', '11月'];
+        const x_list = [student.m4, student.m5, student.m6, student.m7, student.m9, student.m10, student.m11];
+        const twobar = [champion.m4, champion.m5, champion.m6, champion.m7, champion.m9, champion.m10, champion.m11];
+
+        currentAttendChartLine = new Chart(ctxLine.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: t_list,
+            datasets: [
+              {
+                label: `出席番号${student.studentId}`,
+                data: x_list,
+                borderColor: '#1f77b4',
+                backgroundColor: 'rgba(31, 119, 180, 0.1)',
+                borderWidth: 2,
+                pointRadius: 4,
+                tension: 0.1
+              },
+              {
+                label: '11月のチャンピオン',
+                data: twobar,
+                borderColor: '#ff7f0e',
+                borderWidth: 2,
+                pointRadius: 4,
+                tension: 0.1
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: `出席番号${student.studentId}の年間累計欠席日数と欠席リミット比率`
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: '日数' }
+              },
+              x: {
+                title: { display: true, text: '日付' }
+              }
+            }
+          }
+        });
+      }
+
+      // 2. 円グラフ (utils1)
+      const ctxPie = document.getElementById('attendChartPie');
+      if (ctxPie) {
+        if (currentAttendChartPie) currentAttendChartPie.destroy();
+        const m4_only = student.m4;
+        const m5_only = Math.max(0, parseFloat((student.m5 - student.m4).toFixed(2)));
+        const m6_only = Math.max(0, parseFloat((student.m6 - student.m5).toFixed(2)));
+        const m7_only = Math.max(0, parseFloat((student.m7 - student.m6).toFixed(2)));
+        const m9_only = Math.max(0, parseFloat((student.m9 - student.m7).toFixed(2)));
+        const m10_only = Math.max(0, parseFloat((student.m10 - student.m9).toFixed(2)));
+        const m11_only = Math.max(0, parseFloat((student.m11 - student.m10).toFixed(2)));
+        const remainDays = Math.max(0, parseFloat((LIMIT_DAYS - student.m11).toFixed(2)));
+
+        const pieLabels = [
+          '4月', '5月', '6月', '7月', '9月', '10月', '11月',
+          `残り日数:${remainDays}日`
+        ];
+        const pieData = [m4_only, m5_only, m6_only, m7_only, m9_only, m10_only, m11_only, remainDays];
+
+        currentAttendChartPie = new Chart(ctxPie.getContext('2d'), {
+          type: 'pie',
+          data: {
+            labels: pieLabels,
+            datasets: [{
+              data: pieData,
+              backgroundColor: [
+                '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#9c755f'
+              ],
+              offset: [0, 0, 0, 0, 0, 0, 0, 10]
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: '欠席の内訳'
+              },
+              legend: {
+                position: 'right',
+                labels: { boxWidth: 12, font: { size: 10 } }
+              }
+            }
+          }
+        });
+      }
+
+      // 3. 散布図 (utils2)
+      const ctxScatter = document.getElementById('attendChartScatter');
+      if (ctxScatter) {
+        if (currentAttendChartScatter) currentAttendChartScatter.destroy();
+        const scatterData = CT4_STUDENTS.map(s => ({ x: s.num, y: s.m11 }));
+
+        currentAttendChartScatter = new Chart(ctxScatter.getContext('2d'), {
+          type: 'scatter',
+          data: {
+            datasets: [{
+              label: '11月年間累計欠席換算',
+              data: scatterData,
+              backgroundColor: '#1f77b4',
+              pointRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: { display: true, text: '散布図' }
+            },
+            scales: {
+              x: {
+                title: { display: true, text: '出席番号' },
+                min: 0,
+                max: 60
+              },
+              y: {
+                title: { display: true, text: '人数' },
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      }
+
+      // 4. ヒストグラム (utils2)
+      const ctxHist = document.getElementById('attendChartHist');
+      if (ctxHist) {
+        if (currentAttendChartHist) currentAttendChartHist.destroy();
+        const bins = [0, 5, 10, 15, 20, 25, 30, 35];
+        const binLabels = ['0-5', '5-10', '10-15', '15-20', '20-25', '25-30', '30-35'];
+        const binCounts = new Array(binLabels.length).fill(0);
+
+        CT4_STUDENTS.forEach(s => {
+          for (let i = 0; i < bins.length - 1; i++) {
+            const isLast = i === bins.length - 2;
+            if (s.m11 >= bins[i] && (isLast ? s.m11 <= bins[i+1] : s.m11 < bins[i+1])) {
+              binCounts[i]++;
+              break;
+            }
+          }
+        });
+
+        currentAttendChartHist = new Chart(ctxHist.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: binLabels,
+            datasets: [{
+              label: '頻度',
+              data: binCounts,
+              backgroundColor: '#1f77b4'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: { display: true, text: 'ヒストグラム' }
+            },
+            scales: {
+              x: { title: { display: true, text: '欠席日数' } },
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      }
+
+      // 5. 全員棒グラフ (utils2)
+      const ctxAllBar = document.getElementById('attendChartAllBar');
+      if (ctxAllBar) {
+        if (currentAttendChartAllBar) currentAttendChartAllBar.destroy();
+        const barLabels = CT4_STUDENTS.map(s => s.num);
+        const barData = CT4_STUDENTS.map(s => s.m11);
+
+        currentAttendChartAllBar = new Chart(ctxAllBar.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: barLabels,
+            datasets: [{
+              label: '11月年間累計欠席換算',
+              data: barData,
+              backgroundColor: '#1f77b4'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                title: { display: true, text: '出席番号' },
+                ticks: { font: { size: 9 } }
+              },
+              y: {
+                title: { display: true, text: '欠席日数' },
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      }
+
+      // 6. describe テーブル (当時の x_list2.describe().to_html 完全再現)
+      const sortedVals = [...values11].sort((a, b) => a - b);
+      function quantile(arr, q) {
+        const pos = (arr.length - 1) * q;
+        const base = Math.floor(pos);
+        const rest = pos - base;
+        if (arr[base + 1] !== undefined) {
+          return arr[base] + rest * (arr[base + 1] - arr[base]);
+        }
+        return arr[base];
+      }
+
+      const qMin = sortedVals[0];
+      const q25 = quantile(sortedVals, 0.25);
+      const q50 = quantile(sortedVals, 0.50);
+      const q75 = quantile(sortedVals, 0.75);
+      const qMax = sortedVals[sortedVals.length - 1];
+
+      document.getElementById('attendDescribeContainer').innerHTML = `
+        <table class="dataframe" style="border: 1px solid #ccc; border-collapse: collapse; margin: 0 auto; text-align: right; font-family: monospace; white-space: nowrap;">
+          <thead>
+            <tr style="text-align: right; background: #f0f0f0;">
+              <th style="padding: 4px 8px; border: 1px solid #ccc;"></th>
+              <th style="padding: 4px 8px; border: 1px solid #ccc;">11月年間累計欠席換算</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><th style="padding: 4px 8px; border: 1px solid #ccc; text-align: left;">count</th><td style="padding: 4px 8px; border: 1px solid #ccc;">${n.toFixed(6)}</td></tr>
+            <tr><th style="padding: 4px 8px; border: 1px solid #ccc; text-align: left;">mean</th><td style="padding: 4px 8px; border: 1px solid #ccc;">${mean.toFixed(6)}</td></tr>
+            <tr><th style="padding: 4px 8px; border: 1px solid #ccc; text-align: left;">std</th><td style="padding: 4px 8px; border: 1px solid #ccc;">${std.toFixed(6)}</td></tr>
+            <tr><th style="padding: 4px 8px; border: 1px solid #ccc; text-align: left;">min</th><td style="padding: 4px 8px; border: 1px solid #ccc;">${qMin.toFixed(6)}</td></tr>
+            <tr><th style="padding: 4px 8px; border: 1px solid #ccc; text-align: left;">25%</th><td style="padding: 4px 8px; border: 1px solid #ccc;">${q25.toFixed(6)}</td></tr>
+            <tr><th style="padding: 4px 8px; border: 1px solid #ccc; text-align: left;">50%</th><td style="padding: 4px 8px; border: 1px solid #ccc;">${q50.toFixed(6)}</td></tr>
+            <tr><th style="padding: 4px 8px; border: 1px solid #ccc; text-align: left;">75%</th><td style="padding: 4px 8px; border: 1px solid #ccc;">${q75.toFixed(6)}</td></tr>
+            <tr><th style="padding: 4px 8px; border: 1px solid #ccc; text-align: left;">max</th><td style="padding: 4px 8px; border: 1px solid #ccc;">${qMax.toFixed(6)}</td></tr>
+          </tbody>
+        </table>
+      `;
+
+      // 7. allcsv テーブル (当時の dfchamponly.to_html(na_rep='') 完全再現)
+      const sortedByChamp = [...CT4_STUDENTS].sort((a, b) => b.m11 - a.m11);
+
+      document.getElementById('attendAllCsvContainer').innerHTML = `
+        <table class="dataframe" style="border: 1px solid #ccc; border-collapse: collapse; margin: 0 auto; text-align: right; font-size: 13px; white-space: nowrap;">
+          <thead>
+            <tr style="text-align: right; background: #f0f0f0;">
+              <th style="padding: 4px 8px; border: 1px solid #ccc;">出席番号</th>
+              <th style="padding: 4px 8px; border: 1px solid #ccc;">学籍番号</th>
+              <th style="padding: 4px 8px; border: 1px solid #ccc;">4月年間累計欠席換算</th>
+              <th style="padding: 4px 8px; border: 1px solid #ccc;">5月年間累計欠席換算</th>
+              <th style="padding: 4px 8px; border: 1px solid #ccc;">6月年間累計欠席換算</th>
+              <th style="padding: 4px 8px; border: 1px solid #ccc;">7月年間累計欠席換算</th>
+              <th style="padding: 4px 8px; border: 1px solid #ccc;">9月年間累計欠席換算</th>
+              <th style="padding: 4px 8px; border: 1px solid #ccc;">10月年間累計欠席換算</th>
+              <th style="padding: 4px 8px; border: 1px solid #ccc;">11月年間累計欠席換算</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sortedByChamp.map(s => `
+              <tr>
+                <th style="padding: 4px 8px; border: 1px solid #ccc; text-align: center;">${s.num}</th>
+                <td style="padding: 4px 8px; border: 1px solid #ccc; text-align: center; font-family: monospace;">${escapeHtml(s.studentId)}</td>
+                <td style="padding: 4px 8px; border: 1px solid #ccc;">${s.m4}</td>
+                <td style="padding: 4px 8px; border: 1px solid #ccc;">${s.m5}</td>
+                <td style="padding: 4px 8px; border: 1px solid #ccc;">${s.m6}</td>
+                <td style="padding: 4px 8px; border: 1px solid #ccc;">${s.m7}</td>
+                <td style="padding: 4px 8px; border: 1px solid #ccc;">${s.m9}</td>
+                <td style="padding: 4px 8px; border: 1px solid #ccc;">${s.m10}</td>
+                <td style="padding: 4px 8px; border: 1px solid #ccc;">${s.m11}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function downloadChartImage(e) {
+      e.preventDefault();
+      if (!currentAttendChartLine) return;
+      const url = currentAttendChartLine.toBase64Image();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'graph.png';
+      a.click();
+    }
+
+    // ==========================================
+    // 画面 4: 他の人の回答一覧 (feedback.html 再現)
+    // ==========================================
+    function renderFeedbackListView() {
+      const app = document.getElementById('app-view');
+      const db = getDB();
+      const answered = db.filter(q => q.Answer && q.Answer.trim() !== '');
+
+      app.innerHTML = `
+        <div class="feedback-form" style="padding: 20px; max-width: 800px; margin: 0 auto;">
+          <div class="fuchidori" style="text-align: center; margin-bottom: 20px;">
+            <p class="headline" style="font-size: 40px; margin: 0;">質問一覧</p>
+          </div>
+
+          <ul style="list-style: none; padding: 0; width: 100%;">
+            ${answered.length === 0 ? '<li style="text-align:center;">回答がまだありません。面接画面で回答を保存してください。</li>' : ''}
+            ${answered.map(obj => `
+              <div class="textarea" style="width: 100%; border: 2px solid #333; background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 6px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 18px;">
+                  <a href="#/feedback_let/${obj.id}" style="color: #0284c7; text-decoration: underline;">
+                    質問:${obj.id}
+                  </a>
+                  <span style="font-size:13px; font-weight:normal; color:#555; margin-left: 10px;">
+                    回答者: ${escapeHtml(obj.WhoAnswers || '未設定')}
+                  </span>
+                </h4>
+                <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">
+                  ${escapeHtml(obj.Question)}
+                </div>
+                <h4 style="color: #0000ff; margin: 8px 0 4px 0;">回答</h4>
+                <div style="font-size: 15px; color: #333; line-height: 1.5; background: #f8fafc; padding: 8px; border-left: 3px solid #0000ff;">
+                  ${escapeHtml(obj.Answer)}
+                </div>
+                ${obj.FB ? `
+                  <h4 style="color: #059669; margin: 8px 0 4px 0;">フィードバック</h4>
+                  <div style="font-size: 14px; color: #333; background: #f0fdf4; padding: 6px; border-left: 3px solid #059669;">
+                    ${escapeHtml(obj.FB)}
+                  </div>
+                ` : ''}
+              </div>
+            `).join('')}
+          </ul>
+
+          <div style="text-align: center; margin-top: 20px;">
+            <button onclick="location.hash='#/'" class="btn-back-home">戻る</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 画面 5: フィードバック入力画面 (feedback_let.html 再現)
+    // ==========================================
+    function renderFeedbackLetView(id) {
+      const app = document.getElementById('app-view');
+      const db = getDB();
+      const obj = db.find(q => q.id === id);
+
+      if (!obj) {
+        location.hash = '#/feedback';
+        return;
+      }
+
+      app.innerHTML = `
+        <form class="mensetsu-form" style="max-width: 600px; margin: 0 auto; padding: 15px;" onsubmit="handleFeedbackLetSubmit(event, ${obj.id})">
+          <h2 style="text-align: center; font-size: 22px;">回答者:${escapeHtml(obj.WhoAnswers || '未設定')}</h2>
+          <p style="text-align: center; font-size: 16px;">
+            質問内容(書き込み不可): ${obj.id}<br>
+            <textarea id="question" cols="30" rows="4" readonly style="width: 90%; font-size: 16px; padding: 8px; margin-top: 6px;">${escapeHtml(obj.Question)}</textarea>
+          </p>
+
+          <div style="text-align: center; margin-bottom: 15px;">
+            <button type="button" style="padding: 8px 16px; font-weight: bold; cursor: pointer;" onclick="synthesizeSpeech()">
+              🔊 テキスト読み上げを実行(課金)
+            </button>
+          </div>
+
+          <p style="text-align: center; font-size: 16px;">
+            あなたの回答(書き込み不可)<br>
+            <textarea cols="30" rows="5" readonly style="width: 90%; font-size: 15px; padding: 8px; background: #f3f4f6;">${escapeHtml(obj.Answer || '')}</textarea>
+          </p>
+
+          <p style="text-align: center; font-size: 16px;">
+            メモ(書き込み不可)<br>
+            <textarea cols="30" rows="3" readonly style="width: 90%; font-size: 14px; padding: 8px; background: #f3f4f6;">${escapeHtml(obj.Memo || '')}</textarea>
+          </p>
+
+          <p style="text-align: center; font-size: 16px;">
+            フィードバック<br>
+            <textarea id="feedbackText" name="feedback" cols="30" rows="5" style="width: 90%; font-size: 15px; padding: 8px;" placeholder="回答へのフィードバックやアドバイスを入力">${escapeHtml(obj.FB || '')}</textarea>
+          </p>
+
+          <div style="text-align: center; margin: 20px 0;">
+            <input type="submit" value="フィードバックを保存" style="padding: 10px 24px; font-size: 16px; font-weight: bold; background: #0284c7; color: #fff; border: none; border-radius: 4px; cursor: pointer;" />
+          </div>
+
+          <p class="formbutton" style="text-align: center; display: flex; justify-content: center; gap: 20px;">
+            <button class="hensyubutton" type="button" onclick="history.back()" title="戻る">
+              <img src="images/mark_arrow_left.png" height="70" width="85" alt="戻る" />
+            </button>
+            <button id="nextBtn" class="hensyubutton" type="button" onclick="location.hash='#/question_List'" title="質問一覧へ">
+              <img src="images/mark_arrow_right.png" height="70" width="85" alt="質問一覧" />
+            </button>
+          </p>
+        </form>
+
+        <div style="text-align: center; margin-top: 15px;">
+          <input type="button" value="戻る" class="btn-back-home" onclick="location.hash='#/feedback'" />
+        </div>
+      `;
+    }
+
+    function handleFeedbackLetSubmit(e, id) {
+      e.preventDefault();
+      const fb = document.getElementById('feedbackText').value;
+      const currentUser = getCurrentUser();
+      const db = getDB();
+      const item = db.find(q => q.id === id);
+      if (item) {
+        item.FB = fb;
+        item.FBer = currentUser;
+        saveDB(db);
+        showToast('フィードバックを保存しました');
+      }
+      location.hash = '#/feedback';
+    }
+
+    // ==========================================
+    // 画面 6: 未フィードバック一覧 (feedback_yet.html 再現)
+    // ==========================================
+    function renderFeedbackYetView() {
+      const app = document.getElementById('app-view');
+      const db = getDB();
+      const unFeedbacked = db.filter(q => q.Answer && q.Answer.trim() !== '' && (!q.FB || q.FB.trim() === ''));
+
+      app.innerHTML = `
+        <div class="feedback-form" style="padding: 20px; max-width: 800px; margin: 0 auto;">
+          <div class="fuchidori" style="text-align: center; margin-bottom: 20px;">
+            <p class="headline" style="font-size: 36px; margin: 0;">未フィードバック一覧</p>
+          </div>
+
+          <ul style="list-style: none; padding: 0; width: 100%;">
+            ${unFeedbacked.length === 0 ? '<li style="text-align:center;">現在、未フィードバックの回答はありません。</li>' : ''}
+            ${unFeedbacked.map(obj => `
+              <div class="textarea" style="width: 100%; border: 2px solid #333; background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 6px;">
+                <h4><a href="#/feedback_let/${obj.id}" style="color: #0284c7;">質問:${obj.id}</a></h4>
+                <div style="font-size: 16px; font-weight: bold; margin-bottom: 6px;">${escapeHtml(obj.Question)}</div>
+                <div style="font-size: 14px; color: #555;">回答: ${escapeHtml(obj.Answer)}</div>
+                <div style="margin-top: 10px;">
+                  <button onclick="location.hash='#/feedback_let/${obj.id}'" style="padding: 6px 12px; cursor: pointer;">
+                    フィードバックを書く
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </ul>
+
+          <div style="text-align: center; margin-top: 20px;">
+            <button onclick="location.hash='#/'" class="btn-back-home">戻る</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 画面 7: 質問投稿画面 (question.html 再現)
+    // ==========================================
+    function renderQuestionCreateView() {
+      const app = document.getElementById('app-view');
+      const accounts = getAccounts();
+
+      app.innerHTML = `
+        <div class="question" style="display: flex; justify-content: center; padding: 20px;">
+          <form class="question-form" style="width: 100%; max-width: 500px; border: 2px solid #333; padding: 20px; background: #fff; border-radius: 8px;" onsubmit="handleQuestionCreateSubmit(event)">
+            <h2 style="text-align: center; font-size: 24px; margin-bottom: 15px;">質問の新規投稿</h2>
+
+            <p style="font-size: 16px;">
+              質問内容を入力<br>
+              <textarea class="question-textarea" id="newQuestionText" name="q" cols="30" rows="5" required style="width: 100%; font-size: 15px; padding: 8px; margin-top: 5px;"></textarea>
+            </p>
+
+            <p style="font-size: 16px;">
+              回答者リクエスト<br>
+              <select name="AR" id="newQuestionAR" style="padding: 6px 12px; font-size: 15px; width: 100%; margin-top: 5px;">
+                <option value="">idを選択</option>
+                ${accounts.map(acc => `<option value="${escapeHtml(acc.username)}">${escapeHtml(acc.username)}</option>`).join('')}
+              </select>
+            </p>
+
+            <p style="font-size: 16px;">
+              ジャンル<br>
+              <input type="radio" id="genreChoice1" name="contact" value="classic" checked>
+              <label for="genreChoice1">定番</label>
+              <input type="radio" id="genreChoice2" name="contact" value="reverse">
+              <label for="genreChoice2">逆質問</label>
+            </p>
+
+            <div style="text-align: center; margin-top: 20px;">
+              <input class="question-button" type="submit" value="質問する" style="padding: 10px 24px; font-size: 16px; font-weight: bold; background: #0284c7; color: #fff; border: none; border-radius: 4px; cursor: pointer;" />
+              <input class="question-button btn-back-home" type="button" value="戻る" onclick="location.hash='#/'" />
+            </div>
+          </form>
+        </div>
+      `;
+    }
+
+    function handleQuestionCreateSubmit(e) {
+      e.preventDefault();
+      const qText = document.getElementById('newQuestionText').value.trim();
+      const ar = document.getElementById('newQuestionAR').value;
+      const genre = document.querySelector('input[name="contact"]:checked').value;
+      const currentUser = getCurrentUser();
+
+      if (!qText) return;
+
+      const db = getDB();
+      const nextId = db.length > 0 ? Math.max(...db.map(q => q.id)) + 1 : 1;
+
+      const newQ = {
+        id: nextId,
+        Question: qText,
+        Answer: '',
+        Memo: '',
+        FB: '',
+        Contributor: currentUser,
+        WhoAnswers: ar || '',
+        FBer: '',
+        Genre: genre,
+        AnswerReq: ar || '',
+        FBReq: ''
+      };
+
+      db.push(newQ);
+      saveDB(db);
+      showToast(`質問 #${nextId} を追加しました`);
+      location.hash = '#/question_List';
+    }
+
+    // ==========================================
+    // 画面 8: 質問一覧画面 (question_List.html 再現)
+    // ==========================================
+    let currentQuestionListGenre = 'all';
+
+    function renderQuestionListView() {
+      const app = document.getElementById('app-view');
+      const db = getDB();
+      const filtered = db.filter(q => currentQuestionListGenre === 'all' || q.Genre === currentQuestionListGenre);
+
+      app.innerHTML = `
+        <div class="questionlist-form" style="max-width: 800px; margin: 0 auto; padding: 20px;">
+          <div class="fuchidori" style="text-align: center; margin-bottom: 15px;">
+            <p class="headline" style="font-size: 38px; margin: 0;">質問一覧</p>
+          </div>
+
+          <div style="text-align: center; margin-bottom: 20px; font-size: 16px;">
+            <input type="radio" id="radio_all" name="GenreFilter" value="all" ${currentQuestionListGenre === 'all' ? 'checked' : ''} onchange="filterQList('all')">
+            <label for="radio_all">全て</label>
+
+            <input type="radio" id="radio_classic" name="GenreFilter" value="classic" ${currentQuestionListGenre === 'classic' ? 'checked' : ''} onchange="filterQList('classic')">
+            <label for="radio_classic">定番</label>
+
+            <input type="radio" id="radio_reverse" name="GenreFilter" value="reverse" ${currentQuestionListGenre === 'reverse' ? 'checked' : ''} onchange="filterQList('reverse')">
+            <label for="radio_reverse">逆質問</label>
+          </div>
+
+          <ul style="list-style: none; padding: 0; width: 100%;">
+            ${filtered.map(obj => `
+              <div class="textarea" style="width: 100%; border: 2px solid #333; background: #fff; padding: 12px; margin-bottom: 12px; border-radius: 6px;">
+                <h4 style="margin: 0 0 6px 0; font-size: 18px;">
+                  <a href="#/mensetu/${obj.id}" style="color: #0000EE; text-decoration: underline;">
+                    質問:${obj.id}
+                  </a>
+                  <span style="font-size: 12px; color: #fff; background: ${obj.Genre === 'classic' ? '#3b82f6' : '#10b981'}; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">
+                    ${obj.Genre === 'classic' ? '定番' : '逆質問'}
+                  </span>
+                </h4>
+                <div style="font-size: 16px;">${escapeHtml(obj.Question)}</div>
+                ${obj.Answer ? `<div style="font-size: 13px; color: #059669; margin-top: 6px;">回答登録済み</div>` : '<div style="font-size: 13px; color: #9ca3af; margin-top: 6px;">未回答</div>'}
+              </div>
+            `).join('')}
+          </ul>
+
+          <div style="text-align: center; margin-top: 20px;">
+            <button onclick="location.hash='#/'" class="btn-back-home">戻る</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function filterQList(genre) {
+      currentQuestionListGenre = genre;
+      renderQuestionListView();
+    }
+
+    // ==========================================
+    // 画面 9: 質問一覧(編集・削除) (hensyu.html 再現)
+    // ==========================================
+    function renderHensyuView() {
+      const app = document.getElementById('app-view');
+      const db = getDB();
+
+      app.innerHTML = `
+        <div class="situmon" style="max-width: 800px; margin: 0 auto; padding: 20px;">
+          <h2 style="text-align: center; font-size: 26px; margin-bottom: 20px;">面接質問一覧 (編集・削除)</h2>
+          <ul style="list-style: none; padding: 0; width: 100%;">
+            ${db.map(obj => `
+              <div class="textarea" style="width: 100%; border: 2px solid #333; background: #fff; padding: 12px; margin-bottom: 12px; border-radius: 6px;">
+                <h4 style="margin: 0 0 6px 0; color: #0000ee;">
+                  <a href="#/update/${obj.id}">質問:${obj.id}</a>
+                </h4>
+                <div style="font-size: 16px; margin-bottom: 10px;">${escapeHtml(obj.Question)}</div>
+                <button class="hensyubtn" onclick="location.hash='#/update/${obj.id}'" style="padding: 6px 14px; cursor: pointer;">編集</button>
+                <button onclick="deleteQuestion(${obj.id})" style="padding: 6px 14px; margin-left: 8px; background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; cursor: pointer;">削除</button>
+              </div>
+            `).join('')}
+          </ul>
+          <div style="text-align: center; margin-top: 20px;">
+            <button onclick="location.hash='#/'" class="btn-back-home">戻る</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function deleteQuestion(id) {
+      if (confirm(`質問 #${id} を削除しますか？`)) {
+        let db = getDB();
+        db = db.filter(q => q.id !== id);
+        saveDB(db);
+        showToast(`質問 #${id} を削除しました`);
+        renderHensyuView();
+      }
+    }
+
+    // ==========================================
+    // 画面 10: 質問更新画面 (update.html 再現)
+    // ==========================================
+    function renderUpdateView(id) {
+      const app = document.getElementById('app-view');
+      const db = getDB();
+      const obj = db.find(q => q.id === id);
+
+      if (!obj) {
+        location.hash = '#/hensyu';
+        return;
+      }
+
+      app.innerHTML = `
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <form style="border: 2px solid #333; padding: 20px; background: #fff; border-radius: 8px;" onsubmit="handleQuestionUpdate(event, ${obj.id})">
+            <h2 style="text-align: center; font-size: 22px;">質問 #${obj.id} の編集</h2>
+
+            <p style="font-size: 16px;">
+              質問内容<br>
+              <textarea id="editQuestionText" rows="5" style="width: 100%; font-size: 15px; padding: 8px;">${escapeHtml(obj.Question)}</textarea>
+            </p>
+
+            <p style="font-size: 16px;">
+              ジャンル<br>
+              <input type="radio" id="editGenre1" name="editGenre" value="classic" ${obj.Genre === 'classic' ? 'checked' : ''}>
+              <label for="editGenre1">定番</label>
+              <input type="radio" id="editGenre2" name="editGenre" value="reverse" ${obj.Genre === 'reverse' ? 'checked' : ''}>
+              <label for="editGenre2">逆質問</label>
+            </p>
+
+            <div style="text-align: center; margin-top: 20px;">
+              <input type="submit" value="更新する" style="padding: 10px 24px; font-size: 16px; font-weight: bold; background: #0284c7; color: #fff; border: none; border-radius: 4px; cursor: pointer;" />
+              <button type="button" class="btn-back-home" onclick="location.hash='#/hensyu'">キャンセル</button>
+            </div>
+          </form>
+        </div>
+      `;
+    }
+
+    function handleQuestionUpdate(e, id) {
+      e.preventDefault();
+      const newText = document.getElementById('editQuestionText').value.trim();
+      const newGenre = document.querySelector('input[name="editGenre"]:checked').value;
+      const db = getDB();
+      const obj = db.find(q => q.id === id);
+      if (obj) {
+        obj.Question = newText;
+        obj.Genre = newGenre;
+        saveDB(db);
+        showToast(`質問 #${id} を更新しました`);
+      }
+      location.hash = '#/hensyu';
+    }
+
+    // ==========================================
+    // 画面 11: 一気に入力 (allinput.html 再現)
+    // ==========================================
+    function renderAllInputView() {
+      const app = document.getElementById('app-view');
+
+      app.innerHTML = `
+        <div style="max-width: 450px; text-align: center; margin: 0 auto; padding: 15px;">
+          <h1>allinone (一気に入力)</h1>
+          <form class="question-form" style="width: 100%; border: 2px solid #333; padding: 15px; background: #fff; border-radius: 8px;" onsubmit="handleAllInputSubmit(event)">
+            <p>質問内容を入力<br>
+              <textarea class="question-textarea" id="all_Question" style="width: 100%; padding: 6px;" rows="4" required></textarea>
+            </p>
+            <p>回答<br><input class="answer-request" id="all_Answer" type="text" style="width: 100%; padding: 6px;"></p>
+            <p>メモ<br><input class="answer-request" id="all_Memo" type="text" style="width: 100%; padding: 6px;"></p>
+            <p>フィードバック<br><input class="answer-request" id="all_FB" type="text" style="width: 100%; padding: 6px;"></p>
+            <p>投稿者<br><input class="answer-request" id="all_Contributor" type="text" style="width: 100%; padding: 6px;"></p>
+            <p>回答者<br><input class="answer-request" id="all_WhoAnswers" type="text" style="width: 100%; padding: 6px;"></p>
+            <p>フィードバックした人<br><input class="answer-request" id="all_FBer" type="text" style="width: 100%; padding: 6px;"></p>
+            <p>ジャンル<br>
+              <input type="radio" id="all_c1" name="contact" value="classic" checked><label for="all_c1">定番</label>
+              <input type="radio" id="all_c2" name="contact" value="reverse"><label for="all_c2">逆質問</label>
+            </p>
+            <p>回答者リクエスト<br><input class="answer-request" id="all_AR" type="text" style="width: 100%; padding: 6px;"></p>
+            <p>フィードバックリクエスト<br><input class="answer-request" id="all_FBReq" type="text" style="width: 100%; padding: 6px;"></p>
+
+            <div style="margin-top: 15px;">
+              <input class="question-button" type="submit" value="一括登録" style="padding: 8px 20px; font-weight: bold; cursor: pointer;" />
+              <input class="question-button btn-back-home" type="button" value="戻る" onclick="location.hash='#/'" />
+            </div>
+          </form>
+        </div>
+      `;
+    }
+
+    function handleAllInputSubmit(e) {
+      e.preventDefault();
+      const db = getDB();
+      const nextId = db.length > 0 ? Math.max(...db.map(q => q.id)) + 1 : 1;
+
+      const newRecord = {
+        id: nextId,
+        Question: document.getElementById('all_Question').value,
+        Answer: document.getElementById('all_Answer').value,
+        Memo: document.getElementById('all_Memo').value,
+        FB: document.getElementById('all_FB').value,
+        Contributor: document.getElementById('all_Contributor').value || getCurrentUser(),
+        WhoAnswers: document.getElementById('all_WhoAnswers').value,
+        FBer: document.getElementById('all_FBer').value,
+        Genre: document.querySelector('input[name="contact"]:checked').value,
+        AnswerReq: document.getElementById('all_AR').value,
+        FBReq: document.getElementById('all_FBReq').value
+      };
+
+      db.push(newRecord);
+      saveDB(db);
+      showToast(`allinone レコード #${nextId} を登録しました`);
+      location.hash = '#/question_List';
+    }
+
+    // ==========================================
+    // 画面 12: CSV投稿 & ダウンロード (csvDLUP.html 再現)
+    // ==========================================
+    function renderCsvDLUPView() {
+      const app = document.getElementById('app-view');
+      const db = getDB();
+      const accounts = getAccounts();
+
+      app.innerHTML = `
+        <div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+          <div style="border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
+            <h1>csv DL and UP</h1>
+            <h2>データベースアップロード(csv)</h2>
+            <p>
+              <a href="#" onclick="downloadSampleCsv(event)" style="color: #0284c7; text-decoration: underline;">
+                csv見本ダウンロード (mensetu.csv)
+              </a>
+            </p>
+            <div style="margin: 15px 0;">
+              <input type="file" id="csvFileInput" accept=".csv" />
+              <button type="button" onclick="uploadCsvFile()" style="padding: 6px 16px; font-weight: bold; cursor: pointer;">
+                アップロード
+              </button>
+            </div>
+            <p><a href="#/" class="btn-back-home">戻る</a></p>
+          </div>
+
+          <h2>ユーザー一覧</h2>
+          <table border="1" class="dataframe" style="width: 100%; max-width: 400px; margin-left: 0;">
+            <thead>
+              <tr style="text-align: left;">
+                <th>ユーザーID</th>
+                <th>苗字</th>
+                <th>名前</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${accounts.map(acc => `
+                <tr>
+                  <td>${escapeHtml(acc.username)}</td>
+                  <td>${escapeHtml(acc.lastName || '')}</td>
+                  <td>${escapeHtml(acc.firstName || '')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <h2 style="margin-top: 30px;">質問データベース</h2>
+          <p>
+            <a href="#" onclick="downloadCurrentDbCsv(event)" style="color: #0284c7; text-decoration: underline; font-weight: bold;">
+              データベースダウンロード(csv)
+            </a>
+          </p>
+
+          <div style="width: 100%; overflow-x: auto;">
+            <table class="dataframe">
+              <thead>
+                <tr>
+                  <th>id</th>
+                  <th>Question</th>
+                  <th>Answer</th>
+                  <th>Memo</th>
+                  <th>FB</th>
+                  <th>Contributor</th>
+                  <th>WhoAnswers</th>
+                  <th>Genre</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${db.map(q => `
+                  <tr>
+                    <td>${q.id}</td>
+                    <td>${escapeHtml(q.Question)}</td>
+                    <td>${escapeHtml(q.Answer || '')}</td>
+                    <td>${escapeHtml(q.Memo || '')}</td>
+                    <td>${escapeHtml(q.FB || '')}</td>
+                    <td>${escapeHtml(q.Contributor || '')}</td>
+                    <td>${escapeHtml(q.WhoAnswers || '')}</td>
+                    <td>${escapeHtml(q.Genre || '')}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <p style="margin-top: 25px;"><a href="#/" class="btn-back-home">戻る</a></p>
+        </div>
+      `;
+    }
+
+    function downloadCurrentDbCsv(e) {
+      e.preventDefault();
+      const db = getDB();
+      const headers = ['id', 'Question', 'Answer', 'Memo', 'FB', 'Contributor', 'WhoAnswers', 'FBer', 'Genre', 'AnswerReq', 'FBReq'];
+      const csvRows = [headers.join(',')];
+
+      db.forEach(row => {
+        const line = headers.map(h => {
+          const val = row[h] !== undefined ? String(row[h]) : '';
+          return `"${val.replace(/"/g, '""')}"`;
+        }).join(',');
+        csvRows.push(line);
+      });
+
+      const blob = new Blob([csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'mensetu_database.csv';
+      a.click();
+      showToast('質問データベースCSVをダウンロードしました');
+    }
+
+    function downloadSampleCsv(e) {
+      e.preventDefault();
+      downloadCurrentDbCsv(e);
+    }
+
+    function uploadCsvFile() {
+      const fileInput = document.getElementById('csvFileInput');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('CSVファイルを選択してください。');
+        return;
+      }
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const text = evt.target.result;
+        const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+        if (lines.length <= 1) return;
+
+        const db = getDB();
+        let added = 0;
+        // 先頭行ヘッダー
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+          if (cols.length >= 2) {
+            const nextId = db.length > 0 ? Math.max(...db.map(q => q.id)) + 1 : 1;
+            db.push({
+              id: nextId,
+              Question: cols[1] || cols[0],
+              Answer: cols[2] || '',
+              Memo: cols[3] || '',
+              FB: cols[4] || '',
+              Contributor: cols[5] || getCurrentUser(),
+              WhoAnswers: cols[6] || '',
+              FBer: cols[7] || '',
+              Genre: cols[8] || 'classic',
+              AnswerReq: cols[9] || '',
+              FBReq: cols[10] || ''
+            });
+            added++;
+          }
+        }
+        saveDB(db);
+        showToast(`CSVから${added}件の質問をインポートしました`);
+        renderCsvDLUPView();
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+
+    // ==========================================
+    // 画面 13: PDF文字認識 (pdf_read.html 再現)
+    // 当時: pdfminer.six -> 最新: ブラウザ内 PDF.js リアルタイムパース
+    // ==========================================
+    function renderPdfReadView() {
+      const app = document.getElementById('app-view');
+
+      app.innerHTML = `
+        <div style="max-width: 600px; text-align: center; margin: 0 auto; padding: 20px;">
+          <h1>pdf文字認識 pdf to text</h1>
+          <div style="border: 2px dashed #333; padding: 20px; background: #fff; border-radius: 8px; margin: 15px 0;">
+            <input type="file" id="pdfFileInput" accept=".pdf" />
+            <button type="button" onclick="handlePdfUpload()" style="padding: 6px 18px; font-weight: bold; margin-left: 10px; cursor: pointer;">
+              テキスト抽出
+            </button>
+          </div>
+
+          <div id="pdfResultArea" style="display: none; margin-top: 20px;">
+            <h3 style="color: #059669;">✅ 抽出成功 (pdfminer.six ブラウザ再現)</h3>
+            <textarea id="pdfExtractedText" cols="60" rows="14" style="width: 100%; font-size: 14px; padding: 10px; border: 1px solid #333; background: #fff;"></textarea>
+            <p style="margin-top: 10px;">
+              <a id="btnDownloadTxt" href="#" download="extracted.text" style="padding: 6px 14px; background: #333; color: #fff; text-decoration: none; border-radius: 4px;">
+                .text ダウンロード
+              </a>
+            </p>
+          </div>
+
+          <section style="margin-top: 25px;">
+            <p><a href="#/" class="btn-back-home">戻る</a></p>
+          </section>
+        </div>
+      `;
+    }
+
+    async function handlePdfUpload() {
+      const fileInput = document.getElementById('pdfFileInput');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('PDFファイルを選択してください。');
+        return;
+      }
+      const file = fileInput.files[0];
+      const resultArea = document.getElementById('pdfResultArea');
+      const textArea = document.getElementById('pdfExtractedText');
+      const downloadBtn = document.getElementById('btnDownloadTxt');
+
+      showToast('PDFを解析中...');
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          fullText += `--- [Page ${i}] ---\n` + pageText + '\n\n';
+        }
+
+        textArea.value = fullText;
+        resultArea.style.display = 'block';
+
+        const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8;' });
+        downloadBtn.href = URL.createObjectURL(blob);
+        showToast(`全 ${pdf.numPages} ページのテキスト抽出が完了しました`);
+      } catch (err) {
+        console.error(err);
+        alert('PDFの解析に失敗しました: ' + err.message);
+      }
+    }
+
+    // ==========================================
+    // 画面 14: プロフィール画面 (profile.html 再現)
+    // ==========================================
+    function renderProfileView() {
+      const app = document.getElementById('app-view');
+      const currentUser = getCurrentUser();
+      const accounts = getAccounts();
+      const acc = accounts.find(a => a.username === currentUser) || { username: currentUser, lastName: '', firstName: '', img: 'images/upper_body.png' };
+
+      app.innerHTML = `
+        <div class="profile-container" style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div class="profile-header" style="text-align: center;">
+            <img src="${acc.img || 'images/upper_body.png'}" alt="プロフィール画像" class="icon" style="width: 140px; height: 140px; object-fit: contain; border: 3px solid #333; border-radius: 50%; background: #fff;" />
+          </div>
+
+          <h1 style="text-align: center; margin: 15px 0;">${escapeHtml(acc.username)}</h1>
+
+          <section class="profile-two-column" style="width: 100%;">
+            <div class="profile-textarea" style="border: 2px solid #333; background: #fff; padding: 15px; border-radius: 8px;">
+              <dl class="profile-memo">
+                <dt style="font-weight: bold; margin-bottom: 8px;">ユーザー情報</dt>
+                <dd><strong>ユーザーID:</strong> ${escapeHtml(acc.username)}</dd>
+                <dd><strong>パスワード:</strong> ********</dd>
+                <dd><strong>苗字:</strong> ${escapeHtml(acc.lastName || '')}</dd>
+                <dd><strong>名前:</strong> ${escapeHtml(acc.firstName || '')}</dd>
+              </dl>
+            </div>
+
+            <div style="text-align: center; margin: 20px 0;">
+              <button onclick="location.hash='#/'" class="btn-back-home">戻る</button>
+            </div>
+
+            <form style="border: 2px solid #333; padding: 15px; background: #fff; border-radius: 8px; margin-top: 15px;" onsubmit="handleProfileUpdate(event)">
+              <h2 style="font-size: 20px; margin-bottom: 12px;">プロフィール変更</h2>
+              <p>
+                <label for="prof_last_name">苗字:</label><br>
+                <input id="prof_last_name" type="text" value="${escapeHtml(acc.lastName || '')}" style="width: 100%; padding: 6px;" />
+              </p>
+              <p>
+                <label for="prof_first_name">名前:</label><br>
+                <input id="prof_first_name" type="text" value="${escapeHtml(acc.firstName || '')}" style="width: 100%; padding: 6px;" />
+              </p>
+              <button type="submit" style="padding: 8px 20px; font-weight: bold; cursor: pointer; margin-top: 10px;">
+                変更を保存
+              </button>
+            </form>
+          </section>
+        </div>
+      `;
+    }
+
+    function handleProfileUpdate(e) {
+      e.preventDefault();
+      const lastName = document.getElementById('prof_last_name').value.trim();
+      const firstName = document.getElementById('prof_first_name').value.trim();
+      const currentUser = getCurrentUser();
+      const accounts = getAccounts();
+      const acc = accounts.find(a => a.username === currentUser);
+      if (acc) {
+        acc.lastName = lastName;
+        acc.firstName = firstName;
+        saveAccounts(accounts);
+        showToast('プロフィールを更新しました');
+      }
+      renderProfileView();
+    }
+
+    // ==========================================
+    // 画面 15: メール・マイページ画面 (mail.html 再現)
+    // ==========================================
+    function renderMailView() {
+      const app = document.getElementById('app-view');
+      const currentUser = getCurrentUser();
+      const db = getDB();
+
+      const myPosted = db.filter(q => q.Contributor === currentUser);
+      const myAnswered = db.filter(q => q.WhoAnswers === currentUser);
+      const myFeedbacked = db.filter(q => q.FBer === currentUser);
+      const requestedToAnswer = db.filter(q => q.AnswerReq === currentUser);
+      const requestedToFB = db.filter(q => q.FBReq === currentUser);
+
+      app.innerHTML = `
+        <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+          <h2 style="text-align: center; font-size: 26px;">${escapeHtml(currentUser)} のメニュー</h2>
+
+          <div class="chart-box" style="height: 260px; max-width: 500px; margin-bottom: 25px;">
+            <canvas id="mailStatsChart"></canvas>
+          </div>
+
+          <!-- 投稿した質問 -->
+          <ul class="situmonwaku" style="border: 2px solid #333; margin-bottom: 20px; padding: 0; background: #fff; list-style: none;">
+            <p style="background: #e2e8f0; font-weight: bold; padding: 10px; margin: 0; border-bottom: 2px solid #333;">
+              ${escapeHtml(currentUser)}の投稿した質問 (${myPosted.length}件)
+            </p>
+            ${myPosted.map(q => `
+              <div class="mail-textarea" style="padding: 10px; border-bottom: 1px solid #ccc;">
+                <a href="#/mensetu/${q.id}" style="color: #0284c7; font-weight: bold;">質問:${q.id}</a>
+                <div style="font-size: 14px;">内容: ${escapeHtml(q.Question)}</div>
+              </div>
+            `).join('')}
+          </ul>
+
+          <!-- 回答した質問 -->
+          <ul class="situmonwaku" style="border: 2px solid #333; margin-bottom: 20px; padding: 0; background: #fff; list-style: none;">
+            <p style="background: #e2e8f0; font-weight: bold; padding: 10px; margin: 0; border-bottom: 2px solid #333;">
+              ${escapeHtml(currentUser)}の回答した質問 (${myAnswered.length}件)
+            </p>
+            ${myAnswered.map(q => `
+              <div class="mail-textarea" style="padding: 10px; border-bottom: 1px solid #ccc;">
+                <a href="#/feedback_let/${q.id}" style="color: #0284c7; font-weight: bold;">質問:${q.id}</a>
+                <div style="font-size: 14px;">回答: ${escapeHtml(q.Answer)}</div>
+              </div>
+            `).join('')}
+          </ul>
+
+          <!-- フィードバックリクエストが来た質問 -->
+          <ul class="situmonwaku" style="border: 2px solid #333; margin-bottom: 20px; padding: 0; background: #fff; list-style: none;">
+            <p style="background: #e2e8f0; font-weight: bold; padding: 10px; margin: 0; border-bottom: 2px solid #333;">
+              ${escapeHtml(currentUser)}にフィードバックリクエストが来た質問 (${requestedToFB.length}件)
+            </p>
+            ${requestedToFB.map(q => `
+              <div class="mail-textarea" style="padding: 10px; border-bottom: 1px solid #ccc;">
+                <a href="#/feedback_let/${q.id}" style="color: #0284c7; font-weight: bold;">質問:${q.id}</a>
+                <div style="font-size: 14px;">質問: ${escapeHtml(q.Question)}</div>
+              </div>
+            `).join('')}
+          </ul>
+
+          <div style="text-align: center; margin-top: 20px;">
+            <button onclick="location.hash='#/'" class="btn-back-home">戻る</button>
+          </div>
+        </div>
+      `;
+
+      setTimeout(() => {
+        const ctx = document.getElementById('mailStatsChart');
+        if (ctx) {
+          new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+              labels: ['投稿', '回答', 'FB', '回答依頼', 'FB依頼'],
+              datasets: [{
+                label: '件数',
+                data: [myPosted.length, myAnswered.length, myFeedbacked.length, requestedToAnswer.length, requestedToFB.length],
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+          });
+        }
+      }, 50);
+    }
+
+    // ==========================================
+    // 画面 16: ログイン & アカウント切替 (login.html 再現)
+    // ==========================================
+    function renderLoginView() {
+      const app = document.getElementById('app-view');
+      const accounts = getAccounts();
+
+      app.innerHTML = `
+        <div class="reg" style="max-width: 500px; margin: 20px auto; padding: 20px;">
+          <h1 style="text-align: center;">ログイン画面</h1>
+          <form class="loginform" style="border: 2px solid #333; padding: 20px; background: #fff; border-radius: 8px;" onsubmit="handleLoginSubmit(event)">
+            <table class="reg_form" style="width: 100%; margin-bottom: 15px;">
+              <tr>
+                <td><label for="userid">ユーザーID:</label></td>
+                <td><input type="text" id="login_userid" name="userid" style="width: 100%; padding: 6px;" value="${getCurrentUser()}" /></td>
+              </tr>
+              <tr>
+                <td><label for="password">パスワード：</label></td>
+                <td><input type="password" id="login_pass" name="password" style="width: 100%; padding: 6px;" value="123456" /></td>
+              </tr>
+            </table>
+            <div style="text-align: center;">
+              <input type="submit" class="loginbtn" value="Login" style="cursor: pointer; font-size: 16px; font-weight: bold;" />
+            </div>
+          </form>
+
+          <!-- ワンクリック アカウントクイック切替 -->
+          <div style="margin-top: 25px; padding: 15px; border: 1px dashed #666; background: #f8fafc; border-radius: 6px; text-align: center;">
+            <p style="margin-top:0; font-weight:bold; font-size:14px;">クイックアカウント切り替え:</p>
+            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+              ${accounts.map(a => `
+                <button type="button" onclick="quickLogin('${escapeHtml(a.username)}')" style="padding: 4px 10px; font-size: 13px; cursor: pointer;">
+                  ${escapeHtml(a.username)} (${escapeHtml(a.lastName || '')})
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <p class="message" style="text-align: center; margin-top: 20px;">
+            アカウントをお持ちですか？： <span><a href="#/signup" style="color: #0284c7;">アカウントを作成</a></span>
+          </p>
+          <div style="text-align: center;">
+            <button onclick="location.hash='#/'" class="btn-back-home">戻る</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const u = document.getElementById('login_userid').value.trim();
+      if (u) {
+        setCurrentUser(u);
+        showToast(`${u} としてログインしました`);
+        location.hash = '#/';
+      }
+    }
+
+    function quickLogin(username) {
+      setCurrentUser(username);
+      showToast(`${username} に切り替えました`);
+      location.hash = '#/';
+    }
+
+    // ==========================================
+    // 画面 17: 新規登録 (register.html 再現)
+    // ==========================================
+    function renderSignupView() {
+      const app = document.getElementById('app-view');
+
+      app.innerHTML = `
+        <div class="reg" style="max-width: 500px; margin: 20px auto; padding: 20px;">
+          <h1 style="text-align: center;">新規登録</h1>
+          <form class="loginform" style="border: 2px solid #333; padding: 20px; background: #fff; border-radius: 8px;" onsubmit="handleSignupSubmit(event)">
+            <table class="reg_form" style="width: 100%; margin-bottom: 15px;">
+              <tr>
+                <td><label for="new_userid">ユーザーID:</label></td>
+                <td><input type="text" id="new_userid" required style="width: 100%; padding: 6px;" /></td>
+              </tr>
+              <tr>
+                <td><label for="new_lastname">苗字:</label></td>
+                <td><input type="text" id="new_lastname" style="width: 100%; padding: 6px;" /></td>
+              </tr>
+              <tr>
+                <td><label for="new_firstname">名前:</label></td>
+                <td><input type="text" id="new_firstname" style="width: 100%; padding: 6px;" /></td>
+              </tr>
+              <tr>
+                <td><label for="new_password">パスワード：</label></td>
+                <td><input type="password" id="new_password" style="width: 100%; padding: 6px;" value="123456" /></td>
+              </tr>
+            </table>
+            <div style="text-align: center;">
+              <input type="submit" class="loginbtn" value="登録" style="cursor: pointer; font-size: 16px; font-weight: bold;" />
+            </div>
+          </form>
+          <div style="text-align: center; margin-top: 20px;">
+            <button onclick="location.hash='#/'" class="btn-back-home">戻る</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleSignupSubmit(e) {
+      e.preventDefault();
+      const u = document.getElementById('new_userid').value.trim();
+      const last = document.getElementById('new_lastname').value.trim();
+      const first = document.getElementById('new_firstname').value.trim();
+
+      if (!u) return;
+
+      const accounts = getAccounts();
+      if (accounts.some(a => a.username === u)) {
+        alert('そのユーザーIDは既に登録されています。');
+        return;
+      }
+
+      accounts.push({
+        username: u,
+        lastName: last,
+        firstName: first,
+        img: 'images/upper_body.png'
+      });
+      saveAccounts(accounts);
+      setCurrentUser(u);
+      showToast(`アカウント ${u} を作成しログインしました`);
+      location.hash = '#/';
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+
+    // 初期化リスナー
+    window.addEventListener('hashchange', router);
+    window.addEventListener('DOMContentLoaded', () => {
+      updateHeaderUser();
+      router();
+    });
+  </script>
+</body>
+</html>
